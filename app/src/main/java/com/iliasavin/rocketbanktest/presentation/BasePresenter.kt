@@ -1,6 +1,5 @@
 package com.iliasavin.rocketbanktest.presentation
 
-
 abstract class BasePresenter<View> {
     protected var view: View? = null
 

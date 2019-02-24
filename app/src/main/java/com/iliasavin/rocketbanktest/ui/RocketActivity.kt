@@ -1,24 +1,36 @@
 package com.iliasavin.rocketbanktest.ui
 
-import android.R
 import android.graphics.Point
 import android.os.Bundle
+import android.view.View
 import android.widget.ArrayAdapter
 import android.widget.Toast
+import com.iliasavin.rocketbanktest.R
+import com.iliasavin.rocketbanktest.core.extension.onChange
+import com.iliasavin.rocketbanktest.core.extension.onSelection
 import com.iliasavin.rocketbanktest.data.model.PixelColorState
 import com.iliasavin.rocketbanktest.data.model.PixelImage
 import com.iliasavin.rocketbanktest.presentation.BasePresenter
 import com.iliasavin.rocketbanktest.presentation.RocketPresenter
-import com.iliasavin.rocketbanktest.util.onChange
-import com.iliasavin.rocketbanktest.util.onSelection
 import kotlinx.android.synthetic.main.activity_rocket_image.*
 
 class RocketActivity : BaseActivity(), RocketView, SizeChooseListener {
     private lateinit var presenter: RocketPresenter
+    private val sizeChooseFragment by lazy { SizeChooseFragment() }
+    private val clickListener = View.OnClickListener { view ->
+        when (view.id) {
+            generateButton.id -> {
+                updateResult(presenter.rowSize, presenter.columnSize)
+            }
+            changeSizeButton.id -> {
+                sizeChooseFragment.show(supportFragmentManager, SizeChooseFragment.SIZE_CHOOOSE_FRAGMENT_TAG)
+            }
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(com.iliasavin.rocketbanktest.R.layout.activity_rocket_image)
+        setContentView(R.layout.activity_rocket_image)
 
         presenter =
             if (lastCustomNonConfigurationInstance == null) {
@@ -48,37 +60,23 @@ class RocketActivity : BaseActivity(), RocketView, SizeChooseListener {
         Toast.makeText(this, result, Toast.LENGTH_SHORT).show()
     }
 
-    override fun regenerate(image: PixelImage) {
+    override fun update(image: PixelImage) {
         firstRocketImage.updateImage(image)
         secondRocketImage.updateImage(image)
     }
 
     fun initViewElements() {
-        generateButton.setOnClickListener {
-            presenter.clearAndStop()
-
-            presenter.initImages(presenter.rowSize, presenter.columnSize)
-        }
+        arrayOf(generateButton, changeSizeButton).forEach { it.setOnClickListener(clickListener) }
         firstRocketImage.onPixelTouch = { presenter.fill(it) }
         secondRocketImage.onPixelTouch = { presenter.fill(it) }
-        changeSizeButton?.setOnClickListener {
-            val transaction = supportFragmentManager
-                .beginTransaction()
-            SizeChooseFragment().show(transaction, "Change Size")
-        }
-
-        seekBarSpeed.onChange {
-            presenter.changeSpeed((100 - it) * 10L)
-        }
-
+        seekBarSpeed.onChange { presenter.changeSpeed((100 - it) * 10L) }
         setSpinner()
-
     }
 
     private fun setSpinner() {
         val adapter = ArrayAdapter(
             this,
-            R.layout.simple_spinner_item,
+            android.R.layout.simple_spinner_item,
             listOf("BFS", "DFS")
         )
 
@@ -98,7 +96,7 @@ class RocketActivity : BaseActivity(), RocketView, SizeChooseListener {
 
     override fun updateResult(sizeWidth: Int, sizeHeight: Int) {
         presenter.clearAndStop()
-        presenter.initImages(sizeWidth, sizeHeight)
+        presenter.updateImages(sizeWidth, sizeHeight)
     }
 }
 

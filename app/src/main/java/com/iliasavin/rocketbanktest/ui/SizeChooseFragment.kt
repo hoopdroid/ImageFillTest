@@ -7,8 +7,10 @@ import android.view.View
 import android.view.ViewGroup
 import kotlinx.android.synthetic.main.fragment_size.*
 
-
 class SizeChooseFragment : DialogFragment() {
+    companion object {
+        val SIZE_CHOOOSE_FRAGMENT_TAG = "Change Size"
+    }
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         return inflater.inflate(com.iliasavin.rocketbanktest.R.layout.fragment_size, container, false)
     }

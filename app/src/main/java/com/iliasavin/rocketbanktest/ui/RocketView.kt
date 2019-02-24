@@ -7,6 +7,6 @@ import com.iliasavin.rocketbanktest.data.model.PixelImage
 interface RocketView {
     fun refreshFirstImage(pixel: Point, stateColor: PixelColorState)
     fun refreshSecondImage(pixel: Point, stateColor: PixelColorState)
-    fun regenerate(pixelImage: PixelImage)
+    fun update(pixelImage: PixelImage)
     fun showTimeResult(result: String)
 }

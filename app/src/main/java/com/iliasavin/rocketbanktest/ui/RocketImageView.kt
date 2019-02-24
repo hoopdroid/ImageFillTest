@@ -10,45 +10,33 @@ import android.view.MotionEvent
 import android.view.View
 import com.iliasavin.rocketbanktest.data.model.PixelColorState
 import com.iliasavin.rocketbanktest.data.model.PixelImage
-import com.iliasavin.rocketbanktest.util.DEFAULT_PIXEL_SIZE
-import com.iliasavin.rocketbanktest.util.setPixelColor
-import com.iliasavin.rocketbanktest.util.toPixel
+import com.iliasavin.rocketbanktest.core.extension.setPixelColor
+import com.iliasavin.rocketbanktest.core.extension.toPixel
+import com.iliasavin.rocketbanktest.data.fill.DEFAULT_PIXEL_SIZE
 
 class RocketImageView : View {
-    constructor(context: Context) : super(context)
-
-    constructor(context: Context, attrs: AttributeSet) : super(context, attrs)
-
-    constructor(context: Context, attrs: AttributeSet, defStyle: Int) : super(context, attrs, defStyle)
-
     private var startPixel = Point()
     private var pixelsWidth = 0f
     private var pixelsHeight = 0f
-    private val paint = Paint(Paint.ANTI_ALIAS_FLAG)
-
-    init {
-        paint.style = Paint.Style.FILL
+    private val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        style = Paint.Style.FILL
     }
-
     var pixelImage: PixelImage = PixelImage(DEFAULT_PIXEL_SIZE, DEFAULT_PIXEL_SIZE)
     var onPixelTouch: (pixel: Point) -> Unit = {}
 
-    fun generatePixels(width: Int, height: Int) {
-        pixelImage = PixelImage(width, height)
+    constructor(context: Context) : super(context)
+    constructor(context: Context, attrs: AttributeSet) : super(context, attrs)
+    constructor(context: Context, attrs: AttributeSet, defStyle: Int) : super(context, attrs, defStyle)
 
-        invalidate()
-    }
 
     fun updatePixel(pixel: Point, color: PixelColorState) {
         pixelImage.pixels[pixel.x][pixel.y] = color
-
         invalidate()
     }
 
     fun updateImage(image: PixelImage) {
-        this.pixelImage = PixelImage(image.pixels.size, image.pixels.first().size)
-        this.pixelImage.updatePixels(image.pixels)
-
+        pixelImage = PixelImage(image.pixels.size, image.pixels.first().size)
+        pixelImage.updatePixels(image.pixels)
         invalidate()
     }
 
@@ -97,7 +85,6 @@ class RocketImageView : View {
     override fun onSaveInstanceState(): Parcelable {
         val savedState = SavedState(super.onSaveInstanceState())
         savedState.pixels = pixelImage.pixels
-
         return savedState
     }
 

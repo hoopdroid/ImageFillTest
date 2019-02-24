@@ -3,16 +3,12 @@ package com.iliasavin.rocketbanktest.data.model
 import java.util.*
 
 class PixelImage(width: Int, height: Int) {
-    private var pixelsRows = width
-    private var pixelsColumns = height
-
-    var pixels: Array<Array<PixelColorState>> = Array(pixelsRows) { Array(pixelsColumns) { PixelColorState.EMPTY } }
+    private val pixelsRows = width
+    private val pixelsColumns = height
     private val random = Random()
 
-    init {
-        pixels = Array(pixelsRows) {
-            Array(pixelsColumns) { PixelColorState.EMPTY }
-        }
+    var pixels: Array<Array<PixelColorState>> = Array(pixelsRows) {
+        Array(pixelsColumns) { PixelColorState.EMPTY }
     }
 
     fun setRandomly() {

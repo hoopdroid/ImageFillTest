@@ -1,11 +1,8 @@
-package com.iliasavin.rocketbanktest.fill
+package com.iliasavin.rocketbanktest.data.fill
 
 import android.graphics.Point
-import android.media.Image
 import com.iliasavin.rocketbanktest.data.model.PixelColorState
 import com.iliasavin.rocketbanktest.data.model.PixelImage
-import com.iliasavin.rocketbanktest.util.DEFAULT_PIXEL_SIZE
-import com.iliasavin.rocketbanktest.util.DEFAULT_SPEED
 import java.util.*
 
 // TODO
@@ -16,7 +13,7 @@ class DummyFillManager : FillManager {
     override var image: PixelImage = PixelImage(rows, columns)
     override var startPixel: Point = Point(0, 0)
     override var speed: Long = DEFAULT_SPEED
-    override lateinit var onNext: (Point) -> Unit
+    override lateinit var handleNext: (Point) -> Unit
     override var isRunning: Boolean = false
     private val stack = Stack<Point>()
 
@@ -28,14 +25,12 @@ class DummyFillManager : FillManager {
     }
 
     override fun start() {
-        if (image.pixels[startPixel.x][startPixel.y] != PixelColorState.EMPTY) {
-            return
-        }
+        if (image.pixels[startPixel.x][startPixel.y] != PixelColorState.EMPTY) return
         isRunning = true
         stack.add(startPixel)
 
         while (stack.isNotEmpty() && isRunning) {
-            var x= stack.pop().x
+            var x = stack.pop().x
             var y = stack.pop().y
 
             if (image.pixels[x][y] != PixelColorState.EMPTY) {
@@ -68,7 +63,6 @@ class DummyFillManager : FillManager {
 
     override fun clear() {
         isRunning = false
-
         stack.clear()
         image.clear()
         startPixel = Point(0, 0)
