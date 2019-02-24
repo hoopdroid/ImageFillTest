@@ -8,7 +8,7 @@ import com.iliasavin.rocketbanktest.util.DEFAULT_SPEED
 import java.util.*
 
 
-class BFSFillManager : FillManager {
+class DFSFillManager : FillManager {
     private var rows = DEFAULT_PIXEL_SIZE
     private var columns = DEFAULT_PIXEL_SIZE
 
@@ -17,8 +17,7 @@ class BFSFillManager : FillManager {
     override var speed: Long = DEFAULT_SPEED
     override lateinit var onNext: (Point) -> Unit
     override var isRunning: Boolean = false
-
-    private var queue: Queue<Point> = LinkedList()
+    private val stack = Stack<Point>()
 
     override fun setSize(rows: Int, columns: Int) {
         this.rows = rows
@@ -34,17 +33,18 @@ class BFSFillManager : FillManager {
         isRunning = true
 
         image.pixels[startPixel.x][startPixel.y] = PixelColorState.COLORED
-        queue.add(startPixel)
-        onNext(startPixel)
+        stack.push(startPixel)
+        onNextWithDelay(startPixel)
 
-        while (queue.isNotEmpty() && isRunning) {
-            val pixel = queue.poll()
+        while (stack.isNotEmpty() && isRunning) {
+            val pixel = stack.pop()
+
             // West
             if (pixel.y > 0) {
                 val westPixel = Point(pixel.x, pixel.y - 1)
                 if (image.pixels[pixel.x][pixel.y - 1] == PixelColorState.EMPTY) {
                     image.pixels[pixel.x][pixel.y - 1] = PixelColorState.COLORED
-                    queue.add(westPixel)
+                    stack.push(westPixel)
                     onNextWithDelay(westPixel)
                 }
             }
@@ -54,7 +54,7 @@ class BFSFillManager : FillManager {
                 val eastPixel = Point(pixel.x, pixel.y + 1)
                 if (image.pixels[pixel.x][pixel.y + 1] == PixelColorState.EMPTY) {
                     image.pixels[pixel.x][pixel.y + 1] = PixelColorState.COLORED
-                    queue.add(eastPixel)
+                    stack.push(eastPixel)
                     onNextWithDelay(eastPixel)
                 }
             }
@@ -64,7 +64,7 @@ class BFSFillManager : FillManager {
                 val northPixel = Point(pixel.x - 1, pixel.y)
                 if (image.pixels[pixel.x - 1][pixel.y] == PixelColorState.EMPTY) {
                     image.pixels[pixel.x - 1][pixel.y] = PixelColorState.COLORED
-                    queue.add(northPixel)
+                    stack.push(northPixel)
                     onNextWithDelay(northPixel)
                 }
             }
@@ -74,7 +74,7 @@ class BFSFillManager : FillManager {
                 val southPixel = Point(pixel.x + 1, pixel.y)
                 if (image.pixels[pixel.x + 1][pixel.y] == PixelColorState.EMPTY) {
                     image.pixels[pixel.x + 1][pixel.y] = PixelColorState.COLORED
-                    queue.add(southPixel)
+                    stack.push(southPixel)
                     onNextWithDelay(southPixel)
                 }
             }
@@ -85,7 +85,8 @@ class BFSFillManager : FillManager {
 
     override fun clear() {
         isRunning = false
-        queue.clear()
+
+        stack.clear()
         image.clear()
         startPixel = Point(0, 0)
     }

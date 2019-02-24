@@ -4,17 +4,23 @@ import android.graphics.Point
 import com.iliasavin.rocketbanktest.data.model.PixelColorState
 import com.iliasavin.rocketbanktest.data.model.PixelImage
 import com.iliasavin.rocketbanktest.fill.BFSFillManager
+import com.iliasavin.rocketbanktest.fill.DFSFillManager
+import com.iliasavin.rocketbanktest.fill.DummyFillManager
 import com.iliasavin.rocketbanktest.fill.FillManager
 import com.iliasavin.rocketbanktest.ui.RocketView
-import io.reactivex.Observable
+import com.iliasavin.rocketbanktest.util.DEFAULT_PIXEL_SIZE
 import io.reactivex.Single
+import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.CompositeDisposable
 import io.reactivex.schedulers.Schedulers
 
 class RocketPresenter : BasePresenter<RocketView>() {
-    val compositeDisposable: CompositeDisposable = CompositeDisposable()
-    val bfsFillManager: FillManager = BFSFillManager()
-    val dfsFillManager: FillManager = BFSFillManager()
+    private val subscriptions: CompositeDisposable = CompositeDisposable()
+    private val bfsFillManager: FillManager = BFSFillManager()
+    private val dfsFillManager: FillManager = DummyFillManager()
+
+    var rowSize = DEFAULT_PIXEL_SIZE
+    var columnSize = DEFAULT_PIXEL_SIZE
 
     override fun onAttach(view: RocketView) {
         super.onAttach(view)
@@ -22,40 +28,88 @@ class RocketPresenter : BasePresenter<RocketView>() {
 
     override fun onDestroy() {
         super.onDestroy()
-
-//        compositeDisposable.dispose()
     }
 
-    fun updateImage() {
-        view?.regenerate()
-    }
+    fun initImages(sizeWidth: Int, sizeHeight: Int) {
+        rowSize = sizeWidth
+        columnSize = sizeHeight
 
-    fun initImages(image: PixelImage) {
-        bfsFillManager.image = PixelImage(image.pixels.size, image.pixels.first().size)
-        bfsFillManager.image.pixels.forEachIndexed { rowIndex, row ->
-            row.forEachIndexed { columnIndex, column ->
-                bfsFillManager.image.pixels[rowIndex][columnIndex] = image.pixels[rowIndex][columnIndex]
-            }
-        }
+        val image = PixelImage(rowSize, columnSize)
+        image.setRandomly()
+
+        bfsFillManager.setSize(rowSize, columnSize)
+        bfsFillManager.image.updatePixels(image.pixels)
         bfsFillManager.onNext = { pixel ->
-            view?.invalidate(pixel, PixelColorState.COLORED)
+            if (bfsFillManager.isRunning)
+                subscriptions.add(Single.fromCallable {
+                    view?.refreshFirstImage(pixel, PixelColorState.COLORED)
+                    true
+                }
+                    .subscribeOn(AndroidSchedulers.mainThread())
+                    .observeOn(Schedulers.computation())
+                    .subscribe({}, {})
+                )
         }
+
+        dfsFillManager.setSize(rowSize, columnSize)
+        dfsFillManager.image.updatePixels(image.pixels)
+        dfsFillManager.onNext = {
+            if (dfsFillManager.isRunning)
+                subscriptions.add(Single.fromCallable {
+                    view?.refreshSecondImage(it, PixelColorState.COLORED)
+                    true
+                }
+                    .subscribeOn(AndroidSchedulers.mainThread())
+                    .observeOn(Schedulers.computation())
+                    .subscribe({}, {})
+                )
+        }
+
+        view?.regenerate(image)
     }
 
     fun fill(startPixel: Point) {
+        var firstTimer = 0L
+
         bfsFillManager.startPixel = startPixel
-        compositeDisposable.add(Single.fromCallable {
+        dfsFillManager.startPixel = startPixel
+
+        subscriptions.add(Single.fromCallable {
+            firstTimer = System.currentTimeMillis()
             bfsFillManager.start()
             false
         }
             .subscribeOn(Schedulers.io())
-            .observeOn(Schedulers.io())
-            .subscribe ({
-                val a = it
+            .observeOn(AndroidSchedulers.mainThread())
+            .subscribe({
+                //                view?.showTimeResult("BFS has been completed for a ${System.currentTimeMillis() - firstTimer}")
             }, {
-                val a = 5
             })
         )
+
+        var secondTimer = 0L
+        subscriptions.add(Single.fromCallable {
+            secondTimer = System.currentTimeMillis()
+            dfsFillManager.start()
+            false
+        }
+            .subscribeOn(Schedulers.io())
+            .observeOn(AndroidSchedulers.mainThread())
+            .subscribe({
+                //                view?.showTimeResult("DFS has been completed for a ${System.currentTimeMillis() - secondTimer}")
+            }, {
+            })
+        )
+    }
+
+    fun changeSpeed(speed: Long) {
+        bfsFillManager.changeSpeed(speed)
+        dfsFillManager.changeSpeed(speed)
+    }
+
+    fun clearAndStop() {
+        bfsFillManager.clear()
+        dfsFillManager.clear()
     }
 
 

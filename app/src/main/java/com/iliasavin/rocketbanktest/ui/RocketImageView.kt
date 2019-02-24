@@ -4,14 +4,13 @@ import android.content.Context
 import android.graphics.Canvas
 import android.graphics.Paint
 import android.graphics.Point
-import android.graphics.PointF
 import android.os.Parcelable
 import android.util.AttributeSet
 import android.view.MotionEvent
 import android.view.View
-import android.widget.Toast
-import com.iliasavin.rocketbanktest.data.model.PixelImage
 import com.iliasavin.rocketbanktest.data.model.PixelColorState
+import com.iliasavin.rocketbanktest.data.model.PixelImage
+import com.iliasavin.rocketbanktest.util.DEFAULT_PIXEL_SIZE
 import com.iliasavin.rocketbanktest.util.setPixelColor
 import com.iliasavin.rocketbanktest.util.toPixel
 
@@ -22,21 +21,17 @@ class RocketImageView : View {
 
     constructor(context: Context, attrs: AttributeSet, defStyle: Int) : super(context, attrs, defStyle)
 
+    private var startPixel = Point()
+    private var pixelsWidth = 0f
+    private var pixelsHeight = 0f
     private val paint = Paint(Paint.ANTI_ALIAS_FLAG)
 
     init {
         paint.style = Paint.Style.FILL
     }
 
-    private var selectedPixels = mutableListOf<Pair<Int, Int>>()
-    private var startPixel = Point()
-
+    var pixelImage: PixelImage = PixelImage(DEFAULT_PIXEL_SIZE, DEFAULT_PIXEL_SIZE)
     var onPixelTouch: (pixel: Point) -> Unit = {}
-
-    var pixelImage: PixelImage = PixelImage(64, 64)
-
-    var pixelsWidth = 0f
-    var pixelsHeight = 0f
 
     fun generatePixels(width: Int, height: Int) {
         pixelImage = PixelImage(width, height)
@@ -44,14 +39,23 @@ class RocketImageView : View {
         invalidate()
     }
 
-    fun updateImage(pixel: Point, color: PixelColorState){
+    fun updatePixel(pixel: Point, color: PixelColorState) {
         pixelImage.pixels[pixel.x][pixel.y] = color
+
+        invalidate()
+    }
+
+    fun updateImage(image: PixelImage) {
+        this.pixelImage = PixelImage(image.pixels.size, image.pixels.first().size)
+        this.pixelImage.updatePixels(image.pixels)
 
         invalidate()
     }
 
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
+
+        if (pixelImage.pixels.isEmpty()) return
 
         pixelsWidth = measuredWidth.toFloat() / pixelImage.pixels.first().size
         pixelsHeight = measuredHeight.toFloat() / pixelImage.pixels.size
@@ -73,21 +77,17 @@ class RocketImageView : View {
         }
     }
 
-    override fun onTouchEvent(event: MotionEvent?): Boolean {
-        when (event?.action) {
+    override fun onTouchEvent(event: MotionEvent): Boolean {
+        when (event.action) {
             MotionEvent.ACTION_DOWN -> {
                 startPixel = Point(event.x.toInt(), event.y.toInt())
                     .toPixel(pixelsWidth, pixelsHeight)
+                startPixel.let(onPixelTouch)
                 return true
             }
 
             MotionEvent.ACTION_UP -> {
                 startPixel.let(onPixelTouch)
-                Toast.makeText(this.context, startPixel.toString(), Toast.LENGTH_SHORT).show()
-                return true
-            }
-
-            MotionEvent.ACTION_CANCEL -> {
                 return true
             }
         }
@@ -104,7 +104,7 @@ class RocketImageView : View {
     override fun onRestoreInstanceState(state: Parcelable) {
         if (state is SavedState) {
             super.onRestoreInstanceState(state.superState)
-            pixelImage.pixels = state.pixels
+            pixelImage.updatePixels(state.pixels)
             invalidate()
         } else {
             super.onRestoreInstanceState(state)
