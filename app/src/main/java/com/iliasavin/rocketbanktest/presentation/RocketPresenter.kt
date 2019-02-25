@@ -2,38 +2,31 @@ package com.iliasavin.rocketbanktest.presentation
 
 import android.graphics.Point
 import com.iliasavin.rocketbanktest.core.extension.applyComputationScheduler
-import com.iliasavin.rocketbanktest.data.fill.BFSFillManager
-import com.iliasavin.rocketbanktest.data.fill.DEFAULT_PIXEL_SIZE
-import com.iliasavin.rocketbanktest.data.fill.DFSFillManager
-import com.iliasavin.rocketbanktest.data.fill.FillManager
+import com.iliasavin.rocketbanktest.core.extension.applyMainThreadScheduler
+import com.iliasavin.rocketbanktest.data.fill.*
 import com.iliasavin.rocketbanktest.data.model.PixelColorState
 import com.iliasavin.rocketbanktest.data.model.PixelImage
 import com.iliasavin.rocketbanktest.ui.RocketView
 import io.reactivex.Single
-import io.reactivex.android.schedulers.AndroidSchedulers
-import io.reactivex.disposables.CompositeDisposable
 import io.reactivex.schedulers.Schedulers
 
 class RocketPresenter : BasePresenter<RocketView>() {
-    private val subscriptions: CompositeDisposable = CompositeDisposable()
-    private val bfsFillManager: FillManager = BFSFillManager().apply {
+    private var firstImageFillManager: FillManager = BFSFillManager().apply {
         handleNext = { point ->
-            if (isRunning) {
-                doInBackground { view?.refreshFirstImage(point, PixelColorState.COLORED) }
-            }
+            imagePainter(true, point, isRunning)()
         }
     }
 
-    private val dfsFillManager: FillManager = DFSFillManager().apply {
+    private var secondImageFillManager: FillManager = DFSFillManager().apply {
         handleNext = { point ->
-            if (isRunning) {
-                doInBackground { view?.refreshSecondImage(point, PixelColorState.COLORED) }
-            }
+            imagePainter(false, point, isRunning)()
         }
     }
 
     var rowSize = DEFAULT_PIXEL_SIZE
     var columnSize = DEFAULT_PIXEL_SIZE
+
+    var savedSpeed = DEFAULT_SPEED
 
     override fun onAttach(view: RocketView) {
         super.onAttach(view)
@@ -50,61 +43,139 @@ class RocketPresenter : BasePresenter<RocketView>() {
         val image = PixelImage(rowSize, columnSize)
         image.setRandomly()
 
-        bfsFillManager.setSize(rowSize, columnSize)
-        bfsFillManager.image.updatePixels(image.pixels)
+        firstImageFillManager.setSize(rowSize, columnSize)
+        firstImageFillManager.image.updatePixels(image.pixels)
 
-        dfsFillManager.setSize(rowSize, columnSize)
-        dfsFillManager.image.updatePixels(image.pixels)
+        secondImageFillManager.setSize(rowSize, columnSize)
+        secondImageFillManager.image.updatePixels(image.pixels)
 
         view?.update(image)
     }
 
     fun fill(startPixel: Point) {
+        firstImageFillManager.startPixel = startPixel
+        secondImageFillManager.startPixel = startPixel
+
         var firstTimer = 0L
-
-        bfsFillManager.startPixel = startPixel
-        dfsFillManager.startPixel = startPixel
-
-        val subscription = Single.fromCallable {
+        val firstImageSubscription = Single.fromCallable {
             firstTimer = System.currentTimeMillis()
-            bfsFillManager.start()
-        }
-            .subscribeOn(Schedulers.io())
-            .observeOn(AndroidSchedulers.mainThread())
+            firstImageFillManager.start()
+        }.applyMainThreadScheduler(Schedulers.io())
             .subscribe({
-                view?.showTimeResult("BFS has been completed for a ${System.currentTimeMillis() - firstTimer}")
-            }, {
-            })
-        subscriptions.add(subscription)
+                view?.showTimeResult(
+                    "FIRST method has been completed for a" +
+                            " ${System.currentTimeMillis() - firstTimer} millis"
+                )
+            }, {})
 
         var secondTimer = 0L
-        subscriptions.add(Single.fromCallable {
+        val secondImageSubscription = Single.fromCallable {
             secondTimer = System.currentTimeMillis()
-            dfsFillManager.start()
-        }
-            .subscribeOn(Schedulers.io())
-            .observeOn(AndroidSchedulers.mainThread())
+            secondImageFillManager.start()
+        }.applyMainThreadScheduler(Schedulers.io())
             .subscribe({
-                view?.showTimeResult("DFS has been completed for a ${System.currentTimeMillis() - secondTimer}")
-            }, {
-            })
-        )
+                view?.showTimeResult(
+                    "SECOND method has been completed for a " +
+                            "${System.currentTimeMillis() - secondTimer} millis"
+                )
+            }, {})
+
+        subscriptions.add(firstImageSubscription)
+        subscriptions.add(secondImageSubscription)
+
     }
 
     fun changeSpeed(speed: Long) {
-        bfsFillManager.changeSpeed(speed)
-        dfsFillManager.changeSpeed(speed)
+        this.savedSpeed = speed
+        firstImageFillManager.changeSpeed(speed)
+        secondImageFillManager.changeSpeed(speed)
     }
 
     fun clearAndStop() {
-        bfsFillManager.clear()
-        dfsFillManager.clear()
+        firstImageFillManager.clear()
+        secondImageFillManager.clear()
     }
 
-    fun doInBackground(lambda: () -> Unit) {
-        val subscription = Single.fromCallable { lambda() }
+    private fun imagePainter(isFirstImage: Boolean, point: Point, isRunning: Boolean): () -> Unit {
+        return if (isFirstImage) {
+            {
+                fillImageInBackground(isRunning) { view?.refreshFirstImage(point, PixelColorState.COLORED) }
+            }
+        } else {
+            {
+                fillImageInBackground(isRunning) { view?.refreshSecondImage(point, PixelColorState.COLORED) }
+            }
+        }
+
+    }
+
+    fun fillImageInBackground(isRunning: Boolean, viewAction: () -> Unit) {
+        if (!isRunning) return
+
+        val subscription = Single.fromCallable { viewAction() }
             .applyComputationScheduler()
-            .subscribe({}, {})
         subscriptions.add(subscription)
+    }
+
+    fun setImageFillMethod(method: Int, isFirst: Boolean) {
+        if (firstImageFillManager.isRunning) return
+
+        var manager: FillManager = if (isFirst) firstImageFillManager else secondImageFillManager
+
+        val tempImage = PixelImage(rowSize, columnSize)
+        tempImage.updatePixels(manager.image.pixels)
+
+        when (method) {
+            FillMethods.BFS.id -> {
+                manager = BFSFillManager().apply {
+                    configFillManager(tempImage, isFirst)
+                }
+            }
+            FillMethods.DFS.id -> {
+                manager = DFSFillManager().apply {
+                    configFillManager(tempImage, isFirst)
+                }
+            }
+            FillMethods.DUMMY.id -> {
+                manager = DummyFillManager().apply {
+                    configFillManager(tempImage, isFirst)
+                }
+            }
+        }
+        if (isFirst) {
+            firstImageFillManager = manager
+        } else {
+            secondImageFillManager = manager
+        }
+    }
+
+    private fun FillManager.configFillManager(
+        tempImage: PixelImage,
+        isFirst: Boolean
+    ) {
+        handleNext = { point ->
+            imagePainter(isFirst, point, isRunning)()
+        }
+        image.updatePixels(tempImage.pixels)
+        speed = savedSpeed
+    }
+
+
+    fun buildBFSFillManager(handleNext: (Point) -> Unit): FillManager {
+        val manager = BFSFillManager()
+        manager.handleNext = handleNext
+        return manager
+    }
+
+    fun buildDFSFillManager(handleNext: (Point) -> Unit): FillManager {
+        val manager = DFSFillManager()
+        manager.handleNext = handleNext
+        return manager
+    }
+
+    fun buildDummyFillManager(handleNext: (Point) -> Unit): FillManager {
+        val manager = DummyFillManager()
+        manager.handleNext = handleNext
+        return manager
     }
 }

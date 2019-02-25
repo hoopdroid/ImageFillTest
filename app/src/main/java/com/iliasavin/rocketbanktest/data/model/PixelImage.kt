@@ -3,8 +3,8 @@ package com.iliasavin.rocketbanktest.data.model
 import java.util.*
 
 class PixelImage(width: Int, height: Int) {
-    private val pixelsRows = width
-    private val pixelsColumns = height
+    private var pixelsRows = width
+    private var pixelsColumns = height
     private val random = Random()
 
     var pixels: Array<Array<PixelColorState>> = Array(pixelsRows) {
@@ -20,6 +20,13 @@ class PixelImage(width: Int, height: Int) {
     }
 
     fun updatePixels(pixels: Array<Array<PixelColorState>>) {
+        if (pixels.size != pixelsRows) {
+            pixelsRows = pixels.size
+            pixelsColumns = pixels.first().size
+            this.pixels = Array(pixelsRows) {
+                Array(pixelsColumns) { PixelColorState.EMPTY }
+            }
+        }
         this.pixels.forEachIndexed { rowIndex, row ->
             row.forEachIndexed { columnIndex, column ->
                 this.pixels[rowIndex][columnIndex] = pixels[rowIndex][columnIndex]
@@ -33,6 +40,15 @@ class PixelImage(width: Int, height: Int) {
                 this.pixels[rowIndex][columnIndex] = PixelColorState.EMPTY
             }
         }
+    }
+
+    fun isColored(): Boolean {
+        this.pixels.forEachIndexed { rowIndex, row ->
+            row.forEachIndexed { columnIndex, column ->
+                if (this.pixels[rowIndex][columnIndex] == PixelColorState.COLORED) return true
+            }
+        }
+        return false
     }
 
 }

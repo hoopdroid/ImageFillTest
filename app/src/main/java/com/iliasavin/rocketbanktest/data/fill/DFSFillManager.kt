@@ -5,7 +5,7 @@ import com.iliasavin.rocketbanktest.data.model.PixelColorState
 import com.iliasavin.rocketbanktest.data.model.PixelImage
 import java.util.*
 
-class DFSFillManager : FillManager {
+class DFSFillManager : FillManager, DirectionSearch {
     private var rows = DEFAULT_PIXEL_SIZE
     private var columns = DEFAULT_PIXEL_SIZE
 
@@ -34,49 +34,18 @@ class DFSFillManager : FillManager {
 
         while (stack.isNotEmpty() && isRunning) {
             val pixel = stack.pop()
-
-            // West
-            if (pixel.y > 0) {
-                val westPixel = Point(pixel.x, pixel.y - 1)
-                if (image.pixels[pixel.x][pixel.y - 1] == PixelColorState.EMPTY) {
-                    image.pixels[pixel.x][pixel.y - 1] = PixelColorState.COLORED
-                    stack.push(westPixel)
-                    onNextWithDelay(westPixel)
-                }
-            }
-
-            // East
-            if (pixel.y < image.pixels.size - 1) {
-                val eastPixel = Point(pixel.x, pixel.y + 1)
-                if (image.pixels[pixel.x][pixel.y + 1] == PixelColorState.EMPTY) {
-                    image.pixels[pixel.x][pixel.y + 1] = PixelColorState.COLORED
-                    stack.push(eastPixel)
-                    onNextWithDelay(eastPixel)
-                }
-            }
-
-            // North
-            if (pixel.x > 0) {
-                val northPixel = Point(pixel.x - 1, pixel.y)
-                if (image.pixels[pixel.x - 1][pixel.y] == PixelColorState.EMPTY) {
-                    image.pixels[pixel.x - 1][pixel.y] = PixelColorState.COLORED
-                    stack.push(northPixel)
-                    onNextWithDelay(northPixel)
-                }
-            }
-
-            // South
-            if (pixel.x < image.pixels.first().size - 1) {
-                val southPixel = Point(pixel.x + 1, pixel.y)
-                if (image.pixels[pixel.x + 1][pixel.y] == PixelColorState.EMPTY) {
-                    image.pixels[pixel.x + 1][pixel.y] = PixelColorState.COLORED
-                    stack.push(southPixel)
-                    onNextWithDelay(southPixel)
-                }
-            }
+            searchLeft(image, pixel)
+            searchRight(image, pixel)
+            searchTop(image, pixel)
+            searchBottom(image, pixel)
         }
 
         onComplete()
+    }
+
+    override fun performColorAction(pixel: Point) {
+        stack.push(pixel)
+        onNextWithDelay(pixel)
     }
 
     override fun clear() {

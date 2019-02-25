@@ -82,11 +82,12 @@
             app:layout_constraintStart_toEndOf="@+id/changeSizeButton" />
 
     <TextView
+            android:textSize="10sp"
             android:id="@+id/textView"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginBottom="8dp"
-            android:layout_marginStart="8dp"
+            android:layout_marginStart="4dp"
             android:layout_marginTop="8dp"
             android:text="@string/speed"
             app:layout_constraintBottom_toBottomOf="parent"
@@ -98,8 +99,8 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_marginBottom="8dp"
-            android:layout_marginEnd="8dp"
-            android:layout_marginStart="8dp"
+            android:layout_marginEnd="0dp"
+            android:layout_marginStart="4dp"
             android:layout_marginTop="8dp"
             android:max="100"
             android:progress="50"

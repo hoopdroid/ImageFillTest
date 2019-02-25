@@ -1,6 +1,8 @@
 <resources>
     <string name="app_name">Тестовое в Рокет</string>
     <string name="size">Размер</string>
-    <string name="generate">GO</string>
+    <string name="generate">Пуск</string>
     <string name="speed">Скорость</string>
+    <string name="size_error">Размер rows and columns должны быть одинаковы и в диапозоне от 4 до 64
+    </string>
 </resources>

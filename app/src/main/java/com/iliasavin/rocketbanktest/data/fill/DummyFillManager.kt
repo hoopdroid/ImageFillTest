@@ -5,7 +5,6 @@ import com.iliasavin.rocketbanktest.data.model.PixelColorState
 import com.iliasavin.rocketbanktest.data.model.PixelImage
 import java.util.*
 
-// TODO
 class DummyFillManager : FillManager {
     private var rows = DEFAULT_PIXEL_SIZE
     private var columns = DEFAULT_PIXEL_SIZE
@@ -26,13 +25,14 @@ class DummyFillManager : FillManager {
 
     override fun start() {
         if (image.pixels[startPixel.x][startPixel.y] != PixelColorState.EMPTY) return
-        isRunning = true
+
         stack.add(startPixel)
+        isRunning = true
 
         while (stack.isNotEmpty() && isRunning) {
-            var x = stack.pop().x
-            var y = stack.pop().y
-
+            val obj = stack.pop()
+            val x = obj.x
+            var y = obj.y
             if (image.pixels[x][y] != PixelColorState.EMPTY) {
                 continue
             }

@@ -91,6 +91,7 @@ class RocketImageView : View {
     override fun onRestoreInstanceState(state: Parcelable) {
         if (state is SavedState) {
             super.onRestoreInstanceState(state.superState)
+            pixelImage = PixelImage(state.pixels.size, state.pixels.first().size)
             pixelImage.updatePixels(state.pixels)
             invalidate()
         } else {

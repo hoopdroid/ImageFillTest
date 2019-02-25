@@ -5,7 +5,7 @@ import com.iliasavin.rocketbanktest.data.model.PixelColorState
 import com.iliasavin.rocketbanktest.data.model.PixelImage
 import java.util.*
 
-class BFSFillManager : FillManager {
+class BFSFillManager : FillManager, DirectionSearch {
     private var rows = DEFAULT_PIXEL_SIZE
     private var columns = DEFAULT_PIXEL_SIZE
 
@@ -33,48 +33,19 @@ class BFSFillManager : FillManager {
 
         while (queue.isNotEmpty() && isRunning) {
             val pixel = queue.poll()
-            // West
-            if (pixel.y > 0) {
-                val westPixel = Point(pixel.x, pixel.y - 1)
-                if (image.pixels[pixel.x][pixel.y - 1] == PixelColorState.EMPTY) {
-                    image.pixels[pixel.x][pixel.y - 1] = PixelColorState.COLORED
-                    queue.add(westPixel)
-                    onNextWithDelay(westPixel)
-                }
-            }
-
-            // East
-            if (pixel.y < image.pixels.size - 1) {
-                val eastPixel = Point(pixel.x, pixel.y + 1)
-                if (image.pixels[pixel.x][pixel.y + 1] == PixelColorState.EMPTY) {
-                    image.pixels[pixel.x][pixel.y + 1] = PixelColorState.COLORED
-                    queue.add(eastPixel)
-                    onNextWithDelay(eastPixel)
-                }
-            }
-
-            // North
-            if (pixel.x > 0) {
-                val northPixel = Point(pixel.x - 1, pixel.y)
-                if (image.pixels[pixel.x - 1][pixel.y] == PixelColorState.EMPTY) {
-                    image.pixels[pixel.x - 1][pixel.y] = PixelColorState.COLORED
-                    queue.add(northPixel)
-                    onNextWithDelay(northPixel)
-                }
-            }
-
-            // South
-            if (pixel.x < image.pixels.first().size - 1) {
-                val southPixel = Point(pixel.x + 1, pixel.y)
-                if (image.pixels[pixel.x + 1][pixel.y] == PixelColorState.EMPTY) {
-                    image.pixels[pixel.x + 1][pixel.y] = PixelColorState.COLORED
-                    queue.add(southPixel)
-                    onNextWithDelay(southPixel)
-                }
-            }
+            searchLeft(image, pixel)
+            searchRight(image, pixel)
+            searchTop(image, pixel)
+            searchBottom(image, pixel)
         }
 
         onComplete()
+    }
+
+
+    override fun performColorAction(pixel: Point) {
+        queue.add(pixel)
+        onNextWithDelay(pixel)
     }
 
     override fun clear() {
