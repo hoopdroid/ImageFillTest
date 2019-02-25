@@ -25,7 +25,6 @@ class RocketPresenter : BasePresenter<RocketView>() {
 
     var rowSize = DEFAULT_PIXEL_SIZE
     var columnSize = DEFAULT_PIXEL_SIZE
-
     var savedSpeed = DEFAULT_SPEED
 
     override fun onAttach(view: RocketView) {
@@ -96,18 +95,6 @@ class RocketPresenter : BasePresenter<RocketView>() {
         secondImageFillManager.clear()
     }
 
-    private fun imagePainter(isFirstImage: Boolean, point: Point, isRunning: Boolean): () -> Unit {
-        return if (isFirstImage) {
-            {
-                fillImageInBackground(isRunning) { view?.refreshFirstImage(point, PixelColorState.COLORED) }
-            }
-        } else {
-            {
-                fillImageInBackground(isRunning) { view?.refreshSecondImage(point, PixelColorState.COLORED) }
-            }
-        }
-
-    }
 
     fun fillImageInBackground(isRunning: Boolean, viewAction: () -> Unit) {
         if (!isRunning) return
@@ -151,31 +138,21 @@ class RocketPresenter : BasePresenter<RocketView>() {
 
     private fun FillManager.configFillManager(
         tempImage: PixelImage,
-        isFirst: Boolean
+        isFirstImage: Boolean
     ) {
         handleNext = { point ->
-            imagePainter(isFirst, point, isRunning)()
+            imagePainter(isFirstImage, point, isRunning)()
         }
         image.updatePixels(tempImage.pixels)
         speed = savedSpeed
     }
 
+    private fun imagePainter(isFirstImage: Boolean, point: Point, isRunning: Boolean): () -> Unit {
+        return if (isFirstImage) {
+            { fillImageInBackground(isRunning) { view?.refreshFirstImage(point, PixelColorState.COLORED) } }
+        } else {
+            { fillImageInBackground(isRunning) { view?.refreshSecondImage(point, PixelColorState.COLORED) } }
+        }
 
-    fun buildBFSFillManager(handleNext: (Point) -> Unit): FillManager {
-        val manager = BFSFillManager()
-        manager.handleNext = handleNext
-        return manager
-    }
-
-    fun buildDFSFillManager(handleNext: (Point) -> Unit): FillManager {
-        val manager = DFSFillManager()
-        manager.handleNext = handleNext
-        return manager
-    }
-
-    fun buildDummyFillManager(handleNext: (Point) -> Unit): FillManager {
-        val manager = DummyFillManager()
-        manager.handleNext = handleNext
-        return manager
     }
 }
