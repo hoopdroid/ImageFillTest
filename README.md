@@ -1,4 +1,4 @@
-# Test Task: Visualization of Image Filling Algorithms
+# Visualization of Image Filling Algorithms
 
 This project provides an interactive visualization of various image filling algorithms. 
 
